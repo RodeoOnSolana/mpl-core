@@ -424,23 +424,34 @@ kinobi.accept(
     })
 );
 
-// Render the ergonomic external plugin adapter wrapper layer.
-// This custom renderer derives the per-adapter ergonomic types + transformers
-// + manifests + registry from the same node tree, replacing what used to be
-// hand-written in clients/js/src/plugins. Must run AFTER renderJavaScriptVisitor
-// because that deletes and re-renders the `src/generated` folder.
+// Render the ergonomic plugin wrapper layers with custom renderers. These derive
+// the per-plugin ergonomic types + transformers from the same node tree,
+// replacing what used to be hand-written in clients/js/src/plugins. They must run
+// AFTER renderJavaScriptVisitor because that deletes and re-renders `src/generated`.
 const {
     generateExternalPluginAdapters,
 } = require("./kinobiExternalPluginAdapters.cjs");
+const {
+    generateInternalPlugins,
+} = require("./kinobiInternalPlugins.cjs");
+const pluginManifestPath = path.join(__dirname, "plugin-manifest.json");
 (async () => {
-    const generated = await generateExternalPluginAdapters(
+    const external = await generateExternalPluginAdapters(
         kinobi.getRoot(),
         jsDir,
         prettier
     );
+    const internal = await generateInternalPlugins(
+        kinobi.getRoot(),
+        jsDir,
+        prettier,
+        pluginManifestPath
+    );
     // eslint-disable-next-line no-console
     console.log(
-        "Rendered external plugin adapter layer:\n" +
-            generated.map((f) => "  clients/js/src/generated/" + f).join("\n")
+        "Rendered plugin layers:\n" +
+            [...external, ...internal]
+                .map((f) => "  clients/js/src/generated/" + f)
+                .join("\n")
     );
 })();
